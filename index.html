@@ -124,7 +124,7 @@
 
 <div class="screen" id="maker" hidden>
   <h1>MAP MAKER</h1>
-  <p>Draw islands with dark, closed coastlines on paper, take a photo, then tap the map to name the places.</p>
+  <p>Draw islands with dark, closed coastlines on paper, or use a printed map with blue sea. Take a photo or choose the picture, then tap the map to name the places.</p>
   <div class="row" style="align-items:center">
     <label class="filebtn">&#128247; Take or choose a photo<input type="file" id="mkFile" accept="image/*" hidden></label>
     <button class="small" id="mkRot">&#8635; Rotate</button>
@@ -168,7 +168,7 @@
 
 </script>
 <script>
-const VERSION = 24;
+const VERSION = 25;
 const W = 1400, H = 1061;
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
@@ -192,7 +192,7 @@ mimg.onload = () => { const c = document.createElement('canvas'); c.width = MW; 
   const x = c.getContext('2d'); x.drawImage(mimg, 0, 0); const d = x.getImageData(0, 0, MW, MH).data;
   land = new Uint8Array(MW * MH); for (let i = 0; i < MW * MH; i++) land[i] = d[i * 4] > 127 ? 1 : 0;
   for (const p of PLACES) { let r = 0; while (r < 300 && !ringHasSea(p.x, p.y, r)) r += 4; p.dock = r + 30; }
-  flowFor = null; passable = null;
+  flowFor = null; passable = null; passF = null; flowF = null;
   if (!isHost && hostConn && hostConn.open) try { hostConn.send({ ready: boardId }); } catch (e) {} };
 mimg.src = "data:image/png;base64,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";
 function isLand(x, y) { if (!land) return false;
@@ -621,46 +621,61 @@ function update(dt) {
 const CS = 20, GW = Math.ceil(W / CS), GH = Math.ceil(H / CS);
 let flow = null, flowFor = null, passable = null;
 function buildPassable() { passable = new Uint8Array(GW * GH); for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) passable[y * GW + x] = blocked(x * CS + CS / 2, y * CS + CS / 2, 12) ? 0 : 1; }
-function buildFlow(t) {   // distance from every sea cell to the target, around the islands
-  if (!land) return; if (!passable) buildPassable();
-  flow = new Int16Array(GW * GH).fill(-1); const q = []; const R = (t.dock || 40) - 6;
+const FS = 10, FW = Math.ceil(W / FS), FH = Math.ceil(H / FS); let flowF = null, passF = null;
+function buildPassF() { passF = new Uint8Array(FW * FH); for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) passF[y * FW + x] = blocked(x * FS + FS / 2, y * FS + FS / 2, 7) ? 0 : 1; }
+// distance from every sea cell of a grid to the target, around the islands
+function makeFlow(t, S, GW, GH, pas) {
+  const f = new Int16Array(GW * GH).fill(-1), q = [], R = (t.dock || 40) - 6;
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) { const i = y * GW + x;
-    if (passable[i] && Math.hypot(x * CS + CS / 2 - t.x, y * CS + CS / 2 - t.y) < R) { flow[i] = 0; q.push(i); } }
-  if (!q.length) { const i = clamp(t.y / CS | 0, 0, GH - 1) * GW + clamp(t.x / CS | 0, 0, GW - 1); flow[i] = 0; q.push(i); }
+    if (pas[i] && Math.hypot(x * S + S / 2 - t.x, y * S + S / 2 - t.y) < R) { f[i] = 0; q.push(i); } }
+  if (!q.length) { const i = clamp(t.y / S | 0, 0, GH - 1) * GW + clamp(t.x / S | 0, 0, GW - 1); f[i] = 0; q.push(i); }
   for (let h = 0; h < q.length; h++) { const i = q[h], x = i % GW, y = i / GW | 0;
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
-      const j = ny * GW + nx; if (flow[j] < 0 && passable[j]) { flow[j] = flow[i] + 1; q.push(j); } } }
-  flowFor = t;
+      const j = ny * GW + nx; if (f[j] < 0 && pas[j]) { f[j] = f[i] + 1; q.push(j); } } }
+  return f;
 }
+function buildFlow(t) { if (!land) return; if (!passable) buildPassable(); flow = makeFlow(t, CS, GW, GH, passable); flowF = null; flowFor = t; }
+function fineFlow(t) { if (!flowF) { if (!passF) buildPassF(); flowF = makeFlow(t, FS, FW, FH, passF); } return flowF; }
 function aiInput(p, dt) {
   if (!target) return { x: 0, y: 0, f: false };
   if (flowFor !== target) buildFlow(target);
   let gx = target.x - p.x, gy = target.y - p.y;
-  if (flow) { const cx = clamp(p.x / CS | 0, 0, GW - 1), cy = clamp(p.y / CS | 0, 0, GH - 1); let here = flow[cy * GW + cx];
+  if (flow) {
+    // a route within 60 px on this grid? if not on the normal grid, try the finer one
+    const hasRoute = (S, GW, GH, f) => { const cx = clamp(p.x / S | 0, 0, GW - 1), cy = clamp(p.y / S | 0, 0, GH - 1), K = 60 / S | 0;
+      for (let dy = -K; dy <= K; dy++) for (let dx = -K; dx <= K; dx++) { const nx = cx + dx, ny = cy + dy; if (nx >= 0 && ny >= 0 && nx < GW && ny < GH && f[ny * GW + nx] >= 0) return true; } return false; };
+    let G = [CS, GW, GH, flow]; if (!hasRoute(...G)) { const F = [FS, FW, FH, fineFlow(target)]; if (hasRoute(...F)) G = F; }
+    const [S, GW_, GH_, f] = G, K = 60 / S | 0;
+    const cx = clamp(p.x / S | 0, 0, GW_ - 1), cy = clamp(p.y / S | 0, 0, GH_ - 1); let here = f[cy * GW_ + cx];
+    p.coast = here < 0;
     if (here < 0) {   // hugging a coast: head for the nearest open-water cell that has a route
       let bd = 1e9, bx = 0, by = 0;
-      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
-        const v = flow[ny * GW + nx]; if (v >= 0 && dx * dx + dy * dy < bd) { bd = dx * dx + dy * dy; bx = dx; by = dy; } }
-      if (bd < 1e9) { gx = (cx + bx) * CS + CS / 2 - p.x; gy = (cy + by) * CS + CS / 2 - p.y; here = 0; } }
+      for (let dy = -K; dy <= K; dy++) for (let dx = -K; dx <= K; dx++) { const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= GW_ || ny >= GH_) continue;
+        const v = f[ny * GW_ + nx]; if (v >= 0 && dx * dx + dy * dy < bd) { bd = dx * dx + dy * dy; bx = dx; by = dy; } }
+      if (bd < 1e9) { gx = (cx + bx) * S + S / 2 - p.x; gy = (cy + by) * S + S / 2 - p.y; here = 0; } }
     if (here > 1) { let best = here, bx = 0, by = 0;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
-        const v = flow[ny * GW + nx]; if (v >= 0 && v < best) { best = v; bx = dx; by = dy; } }
-      if (best < here) { gx = (cx + bx) * CS + CS / 2 - p.x; gy = (cy + by) * CS + CS / 2 - p.y; } } }
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= GW_ || ny >= GH_) continue;
+        const v = f[ny * GW_ + nx]; if (v >= 0 && v < best) { best = v; bx = dx; by = dy; } }
+      if (best < here) { gx = (cx + bx) * S + S / 2 - p.x; gy = (cy + by) * S + S / 2 - p.y; } } }
   // grab a power-up that is close
-  for (const u of pups) if (Math.hypot(u.x - p.x, u.y - p.y) < 130) { gx = u.x - p.x; gy = u.y - p.y; break; }
+  for (const u of pups) if (Math.hypot(u.x - p.x, u.y - p.y) < 70) { gx = u.x - p.x; gy = u.y - p.y; break; }
   let n = Math.hypot(gx, gy) || 1, x = gx / n, y = gy / n;
-  for (const m of mons) { const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy); if (d < 120) { x += dx / d * 1.4 * (1 - d / 120); y += dy / d * 1.4 * (1 - d / 120); } }
-  n = Math.hypot(x, y) || 1; x = x / n * .8; y = y / n * .8;
+  for (const m of mons) { const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy); if (d > .001 && d < 120) { x += dx / d * 1.4 * (1 - d / 120); y += dy / d * 1.4 * (1 - d / 120); } }
+  n = Math.hypot(x, y) || 1; x = x / n * .64; y = y / n * .64;
+  // now and then it drifts off course for a moment
+  if (p.coast || p.wigT > 0) p.dzT = 0;
+  else if (!(p.dzT > 0) && Math.random() < 1 - Math.exp(-.3 * dt)) { p.dzT = rnd(.6, 1.4); p.dzA = rnd(-.6, .6); }
+  if (p.dzT > 0) { p.dzT -= dt; const c = Math.cos(p.dzA), s = Math.sin(p.dzA); [x, y] = [x * c - y * s, x * s + y * c]; }
   // unstick
   // stuck = hardly any progress over the last second -> sail off in a random direction for a moment
   p.prog = p.prog || { t: 0, x: p.x, y: p.y }; p.prog.t += dt;
   if (p.prog.t > 1) { if (Math.hypot(p.x - p.prog.x, p.y - p.prog.y) < 30 && !(p.wigT > 0)) { p.wigT = .7; p.wig = Math.atan2(-y, -x) + rnd(-1.2, 1.2); }
     p.prog = { t: 0, x: p.x, y: p.y }; }
-  if (p.wigT > 0) { p.wigT -= dt; x = Math.cos(p.wig); y = Math.sin(p.wig); }
+  if (p.wigT > 0) { p.wigT -= dt; x = Math.cos(p.wig) * .64; y = Math.sin(p.wig) * .64; }
   // fire at a ship in front
   let f = false;
   for (const o of ships) if (o !== p) { const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
-    if (d < 300) { let da = Math.atan2(dy, dx) - p.a; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < .28 && Math.random() < .5) f = true; } }
+    if (d < 300) { let da = Math.atan2(dy, dx) - p.a; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < .2 && Math.random() < 1 - Math.exp(-3 * dt)) f = true; } }
   return { x, y, f };
 }
 
@@ -1062,7 +1077,7 @@ function findBoard(id) { if (id === 'original') return ORIGINAL; return myMaps()
 function loadBoard(b) {   // switch the game to a board (map picture, land mask, named places)
   if (b && b.id === boardId && land) { if (!isHost && hostConn && hostConn.open) try { hostConn.send({ ready: boardId }); } catch (e) {} return; }   // already showing it
   board = b || ORIGINAL; boardId = board.id; ZONES = board.id === 'original';
-  land = null; passable = null; flowFor = null;
+  land = null; passable = null; passF = null; flowF = null; flowFor = null;
   PLACES = board.id === 'original' ? ORIG_PLACES : board.places.map(([n, x, y, c]) => ({ n, x: x * W, y: y * H, col: c }));
   map.src = board.img; mimg.src = board.mask;
 }
@@ -1125,19 +1140,58 @@ let mkTimer = null; const mkLater = () => { clearTimeout(mkTimer); $('mkPlay').d
 $('mkRot').onclick = () => { if (!MK.photo) return; clearTimeout(mkTimer); MK.rot = (MK.rot + 1) % 4; MK.places = []; mkProcess(); };
 $('mkSens').oninput = e => { MK.sens = +e.target.value; mkLater(); };
 $('mkThick').oninput = e => { MK.thick = +e.target.value; mkLater(); };
-// the photo, rotated and cropped to the board shape (1400 x 1061)
+// the photo, rotated and cropped to the board shape (1400 x 1061) - or fitted whole when its shape is very different
 function mkBoardCanvas() {
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'), im = MK.photo;
-  const rw = MK.rot % 2 ? im.height : im.width, rh = MK.rot % 2 ? im.width : im.height, k = Math.max(W / rw, H / rh);
-  x.fillStyle = '#e9dcc0'; x.fillRect(0, 0, W, H);
+  const rw = MK.rot % 2 ? im.height : im.width, rh = MK.rot % 2 ? im.width : im.height, ar = (rw / rh) / (W / H);
+  const fit = ar > 1.15 || ar < 1 / 1.15, k = fit ? Math.min(W / rw, H / rh) : Math.max(W / rw, H / rh);
+  MK.rect = fit ? { x: (W - rw * k) / 2, y: (H - rh * k) / 2, w: rw * k, h: rh * k } : { x: 0, y: 0, w: W, h: H };
+  x.fillStyle = fit ? '#3b2f22' : '#e9dcc0'; x.fillRect(0, 0, W, H);
   x.save(); x.translate(W / 2, H / 2); x.rotate(MK.rot * Math.PI / 2); x.drawImage(im, -im.width * k / 2, -im.height * k / 2, im.width * k, im.height * k); x.restore();
   return c;
+}
+// printed or coloured maps: every bluish colour is sea (water, grid lines, ocean names), the big other colours are land,
+// and writing or borders take the side they sit in. Returns null when there is no clear sea colour (a pencil drawing).
+function mkColour(d, N, out) {
+  const K = 6; let n = 0; const P = new Uint8Array(Math.ceil(N / 11) * 3);   // sampled picture pixels (step 11: not a divisor of the width)
+  for (let i = 0; i < N; i += 11) if (!out(i)) { P[n * 3] = d[i * 4]; P[n * 3 + 1] = d[i * 4 + 1]; P[n * 3 + 2] = d[i * 4 + 2]; n++; }
+  if (n < 200) return null;
+  const dist = (j, c) => (P[j * 3] - c[0]) ** 2 + (P[j * 3 + 1] - c[1]) ** 2 + (P[j * 3 + 2] - c[2]) ** 2;
+  // start colours spread out: the first sample, then each time the sample farthest from all chosen so far
+  const C = [[P[0], P[1], P[2]]], near = new Float64Array(n).fill(1e9);
+  while (C.length < K) { let bj = 0, bd = -1; for (let j = 0; j < n; j++) { near[j] = Math.min(near[j], dist(j, C[C.length - 1])); if (near[j] > bd) { bd = near[j]; bj = j; } }
+    C.push([P[bj * 3], P[bj * 3 + 1], P[bj * 3 + 2]]); }
+  const lab = new Uint8Array(n), cnt = new Float64Array(K);
+  for (let it = 0; it < 10; it++) { const s = new Float64Array(K * 3); cnt.fill(0);
+    for (let j = 0; j < n; j++) { let b = 0, bd = 1e9; for (let k = 0; k < K; k++) { const e = dist(j, C[k]); if (e < bd) { bd = e; b = k; } }
+      lab[j] = b; s[b * 3] += P[j * 3]; s[b * 3 + 1] += P[j * 3 + 1]; s[b * 3 + 2] += P[j * 3 + 2]; cnt[b]++; }
+    for (let k = 0; k < K; k++) if (cnt[k]) C[k] = [s[k * 3] / cnt[k], s[k * 3 + 1] / cnt[k], s[k * 3 + 2] / cnt[k]]; }
+  const share = Array.from(cnt, v => v / n);
+  // blue = clearly more blue than red/green AND a real colour (white, grey and cream paper are not blue)
+  const blue = c => c[2] - Math.max(c[0], c[1] * .85), chroma = c => Math.max(...c) - Math.min(...c);
+  const thr = 30 * (1.2 - MK.sens), isSea = C.map(c => blue(c) > thr && chroma(c) > 20);
+  if (!C.some((c, k) => isSea[k] && share[k] > .12)) return null;
+  const isLand = C.map((c, k) => !isSea[k] && share[k] > .02); if (!isLand.some(v => v)) return null;
+  const m = new Int8Array(N), q = [];
+  for (let i = 0; i < N; i++) { const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2]; let bk = 0, bd = 1e9;
+    for (let k = 0; k < K; k++) { const c = C[k], e = (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2; if (e < bd) { bd = e; bk = k; } }
+    m[i] = isSea[bk] ? 0 : isLand[bk] ? 1 : -1; if (m[i] >= 0) q.push(i); }
+  for (let h = 0; h < q.length; h++) { const i = q[h], v = m[i], x0 = i % MW, y = i / MW | 0;   // grow known areas into writing and lines
+    for (const j of [x0 > 0 ? i - 1 : -1, x0 < MW - 1 ? i + 1 : -1, y > 0 ? i - MW : -1, y < MH - 1 ? i + MW : -1]) if (j >= 0 && m[j] < 0) { m[j] = v; q.push(j); } }
+  return Uint8Array.from(m, v => v === 0 ? 0 : 1);
 }
 // find the islands: dark ink lines are coast; whatever the sea can't reach from the edge is land
 function mkProcess() {
   if (!MK.photo) return;
   const big = mkBoardCanvas(), c = document.createElement('canvas'); c.width = MW; c.height = MH;
   const x = c.getContext('2d'); x.drawImage(big, 0, 0, MW, MH); const d = x.getImageData(0, 0, MW, MH).data, N = MW * MH;
+  const rc = MK.rect, rx1 = Math.ceil(rc.x * MW / W), ry1 = Math.ceil(rc.y * MH / H), rx2 = Math.floor((rc.x + rc.w) * MW / W) - 1, ry2 = Math.floor((rc.y + rc.h) * MH / H) - 1;
+  const out = i => { const x0 = i % MW, y = i / MW | 0; return x0 < rx1 || x0 > rx2 || y < ry1 || y > ry2; };
+  if (!(rx2 - rx1 >= 15 && ry2 - ry1 >= 15)) { MK.mask = null; MK.sea = null; MK.ok = false; MK.boardImg = big;
+    mkStatus('This picture is too long and thin to make a map from. Try another one.'); mkDraw(); return; }
+  for (let i = 0; i < N; i++) if (out(i)) { const j = clamp(i / MW | 0, ry1, ry2) * MW + clamp(i % MW, rx1, rx2); for (let k = 0; k < 4; k++) d[i * 4 + k] = d[j * 4 + k]; }
+  const col = mkColour(d, N, out); let land2, sea;
+  if (col) { land2 = col; sea = new Uint8Array(N); } else {
   const L = new Float32Array(N); for (let i = 0; i < N; i++) L[i] = .299 * d[i * 4] + .587 * d[i * 4 + 1] + .114 * d[i * 4 + 2];
   // local average brightness (box blur, radius 12) via an integral image
   const S = new Float64Array((MW + 1) * (MH + 1));
@@ -1151,29 +1205,49 @@ function mkProcess() {
   let cur = ink; for (let t = 0; t < MK.thick; t++) { const nx = new Uint8Array(N);
     for (let y = 0; y < MH; y++) for (let x0 = 0; x0 < MW; x0++) { const i = y * MW + x0;
       if (cur[i] || (x0 > 0 && cur[i - 1]) || (x0 < MW - 1 && cur[i + 1]) || (y > 0 && cur[i - MW]) || (y < MH - 1 && cur[i + MW])) nx[i] = 1; } cur = nx; }
+  for (let i = 0; i < N; i++) if (out(i)) cur[i] = 0;   // the blocked strips are open: the sea can come in from the picture's own edges
   // flood the sea in from the edges
-  const sea = new Uint8Array(N), q = [];
+  sea = new Uint8Array(N); const q = [];
   const push = i => { if (!sea[i] && !cur[i]) { sea[i] = 1; q.push(i); } };
   for (let x0 = 0; x0 < MW; x0++) { push(x0); push((MH - 1) * MW + x0); } for (let y = 0; y < MH; y++) { push(y * MW); push(y * MW + MW - 1); }
   for (let h = 0; h < q.length; h++) { const i = q[h], x0 = i % MW, y = i / MW | 0;
     if (x0 > 0) push(i - 1); if (x0 < MW - 1) push(i + 1); if (y > 0) push(i - MW); if (y < MH - 1) push(i + MW); }
+  let inSea = 0, inAll = 0; for (let i = 0; i < N; i++) if (!out(i)) { inAll++; inSea += sea[i]; }
+  if (inSea < inAll * .3) {   // the frame line closed everything in: start the sea from a ring a little inside the picture
+    const gx = Math.max(4, (rx2 - rx1) * .04 | 0), gy = Math.max(4, (ry2 - ry1) * .04 | 0), from = q.length;
+    for (let x0 = rx1 + gx; x0 <= rx2 - gx; x0++) { push((ry1 + gy) * MW + x0); push((ry2 - gy) * MW + x0); }
+    for (let y = ry1 + gy; y <= ry2 - gy; y++) { push(y * MW + rx1 + gx); push(y * MW + rx2 - gx); }
+    for (let h = from; h < q.length; h++) { const i = q[h], x0 = i % MW, y = i / MW | 0;
+      if (x0 > 0) push(i - 1); if (x0 < MW - 1) push(i + 1); if (y > 0) push(i - MW); if (y < MH - 1) push(i + MW); } }
   // land = not sea; drop tiny land bits (writing, specks)
-  const land2 = new Uint8Array(N); for (let i = 0; i < N; i++) land2[i] = sea[i] ? 0 : 1;
+  land2 = new Uint8Array(N); for (let i = 0; i < N; i++) land2[i] = sea[i] ? 0 : 1; }
+  for (let i = 0; i < N; i++) if (out(i)) land2[i] = 1;   // outside the picture: blocked
   const seen = new Uint8Array(N);
   for (let s0 = 0; s0 < N; s0++) if (land2[s0] && !seen[s0]) { const blob = [s0]; seen[s0] = 1;
     for (let h = 0; h < blob.length; h++) { const i = blob[h], x0 = i % MW, y = i / MW | 0;
       for (const j of [x0 > 0 ? i - 1 : -1, x0 < MW - 1 ? i + 1 : -1, y > 0 ? i - MW : -1, y < MH - 1 ? i + MW : -1]) if (j >= 0 && land2[j] && !seen[j]) { seen[j] = 1; blob.push(j); } }
     if (blob.length < 150) for (const i of blob) land2[i] = 0; }
+  if (col) {   // keep only the main sea; lakes inside land become land so nothing starts trapped
+    seen.fill(0); let best = null;
+    for (let s0 = 0; s0 < N; s0++) if (!land2[s0] && !seen[s0]) { const b = [s0]; seen[s0] = 1;
+      for (let h = 0; h < b.length; h++) { const i = b[h], x0 = i % MW, y = i / MW | 0;
+        for (const j of [x0 > 0 ? i - 1 : -1, x0 < MW - 1 ? i + 1 : -1, y > 0 ? i - MW : -1, y < MH - 1 ? i + MW : -1]) if (j >= 0 && !land2[j] && !seen[j]) { seen[j] = 1; b.push(j); } }
+      let edge = 0; for (const i of b) { const x0 = i % MW, y = i / MW | 0; if (x0 <= rx1 || x0 >= rx2 || y <= ry1 || y >= ry2) edge++; }
+      const score = b.length + (edge >= 20 ? N : 0);   // a sea with a real stretch of picture edge (the ocean) beats an inland lake
+      if (!best || score > best.score) { if (best) for (const i of best.b) land2[i] = 1; best = { b, score }; } else for (const i of b) land2[i] = 1; }
+    for (let i = 0; i < N; i++) sea[i] = land2[i] ? 0 : 1; }
+  else for (let i = 0; i < N; i++) if (land2[i]) sea[i] = 0;
   MK.mask = land2; MK.sea = sea;
   // the board picture: photo with the sea tinted blue
   const tint = document.createElement('canvas'); tint.width = MW; tint.height = MH; const tx = tint.getContext('2d'), td = tx.createImageData(MW, MH);
   for (let i = 0; i < N; i++) if (!land2[i]) { td.data[i * 4] = 80; td.data[i * 4 + 1] = 150; td.data[i * 4 + 2] = 225; td.data[i * 4 + 3] = 70; }
   tx.putImageData(td, 0, 0); const bx = big.getContext('2d'); bx.imageSmoothingEnabled = true; bx.drawImage(tint, 0, 0, W, H);
   MK.boardImg = big;
-  const landPct = Math.round(land2.reduce((a, v) => a + v, 0) / N * 100); MK.ok = landPct >= 2 && landPct <= 70;
-  mkStatus(landPct < 2 ? 'No islands found. Try more sensitivity or thicker lines - coastlines must be closed loops.' :
-    landPct > 70 ? 'Almost everything became land. Try less sensitivity or thinner lines.' :
-    'Islands found (' + landPct + '% land, shown un-tinted). Now tap the map to add and name places - at least 3.');
+  let inN = 0, inLand = 0; for (let i = 0; i < N; i++) if (!out(i)) { inN++; inLand += land2[i]; }   // judged on the picture only
+  const landPct = Math.round(inLand / Math.max(1, inN) * 100); MK.ok = landPct >= 2 && landPct <= 70;
+  mkStatus(landPct < 2 ? (col ? 'No land found. Try less sensitivity.' : 'No islands found. Try more sensitivity or thicker lines - coastlines must be closed loops.') :
+    landPct > 70 ? (col ? 'Almost everything became land. Try more sensitivity.' : 'Almost everything became land. Try less sensitivity or thinner lines.') :
+    (col ? 'Sea found by its colour' : 'Islands found') + ' (' + landPct + '% land, shown un-tinted). Now tap the map to add and name places - at least 3.');
   mkDraw();
 }
 function mkDraw() {
