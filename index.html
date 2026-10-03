@@ -119,7 +119,7 @@
   <div class="st" id="homeSt">&nbsp;</div>
   <div class="row" style="align-items:center"><span>Map:</span><select id="mapSel" aria-label="Choose a map"></select>
     <button class="small" id="mapDel" hidden>Delete</button><button class="small green" id="bMaker">MAP MAKER<small>use your own drawing</small></button></div>
-  <div class="st" style="opacity:.45">version 21</div>
+  <div class="st" style="opacity:.45">version 22</div>
 </div>
 
 <div class="screen" id="maker" hidden>
@@ -168,7 +168,7 @@
 
 </script>
 <script>
-const VERSION = 21;
+const VERSION = 22;
 const W = 1400, H = 1061;
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
@@ -321,7 +321,7 @@ function mkShip(i) {
 }
 const nameOf = p => p.name, colOf = p => p.l;
 let myIdx = 0;                       // which ship is mine
-const me = () => ships[myIdx] || ships[0];
+const me = () => ships.find(p => p.i === myIdx) || ships[0];
 
 // ---------------- input ----------------
 const pad = { x: 0, y: 0, fire: false };
@@ -369,11 +369,11 @@ addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 // ---------------- view ----------------
-const ZOOM = 1.6; let vw = 0, vh = 0, dpr = 1, K = 1, camX = 0, camY = 0, shakeT = 0;
+const ZOOM = 1.6; let dprCap = matchMedia('(pointer: coarse)').matches ? 1.5 : 2, ftAvg = 16, ftSlow = 0; let vw = 0, vh = 0, dpr = 1, K = 1, camX = 0, camY = 0, shakeT = 0;
 let zoomLevel = (() => { const z = store.get('zoom', null); if (z !== null && z >= 0 && z <= 2) return z;
   return matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) < 560 ? 1 : 0; })();
 function fit() {
-  vw = innerWidth; vh = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
+  vw = innerWidth; vh = innerHeight; dpr = Math.min(dprCap, devicePixelRatio || 1);
   cv.width = vw * dpr | 0; cv.height = vh * dpr | 0; cv.style.width = vw + 'px'; cv.style.height = vh + 'px';
   const fullK = Math.min(vw / W, (vh - (touchMode ? 8 : 70)) / H), fillK = Math.max(vw / W, vh / H);
   K = zoomLevel === 0 ? fullK : zoomLevel === 1 ? Math.max(fullK, fillK) : Math.max(fullK, fillK) * ZOOM;
@@ -444,9 +444,11 @@ function showGoal() {
   if (state !== 'play' || !target) { g.textContent = 'Treasure Race'; g.style.color = '#ffe14d'; return; }
   g.textContent = target.chest ? 'Grab the Gold Chest!' : 'Find: ' + target.n; g.style.color = target.col;
 }
+let hudHtml = '';
 function updHud() {
-  $('scores').innerHTML = ships.map(p => `<span class="sc${p.i === myIdx ? ' me' : ''}" style="color:${p.l}">${p.name} ${p.score}` +
+  const html = ships.map(p => `<span class="sc${p.i === myIdx ? ' me' : ''}" style="color:${p.l}">${p.name} ${p.score}` +
     (series[p.i] ? ` <i>${'★'.repeat(series[p.i])}</i>` : '') + `</span>`).join('');
+  if (html !== hudHtml) { hudHtml = html; $('scores').innerHTML = html; }
   const l = $('lv'); l.textContent = 'Level ' + level + ' · ' + LV().n; l.style.color = LV().c;
   $('day').textContent = DAY().n;
 }
@@ -643,17 +645,22 @@ const r1 = v => Math.round(v);
 const flags = p => (p.shield ? 1 : 0) | (p.boostT > 0 ? 2 : 0) | (p.tripleT > 0 ? 4 : 0) | (p.spinT > 0 ? 8 : 0) | (p.webbed ? 16 : 0) | (p.krakT > 0 ? 32 : 0);
 const S_CODE = { menu: 0, play: 1, over: 2, count: 3, level: 4 }, S_NAME = ['menu', 'play', 'over', 'count', 'level'];
 function snapshot() {
-  const out = { mp: boardId, s: S_CODE[state] || 0, cd: Math.round((state === 'level' ? lvT : countT) * 10) / 10, lv: level, win: WIN, day: dayIx,
-    p: ships.map(p => [p.i, r1(p.x), r1(p.y), Math.round(p.a * 100) / 100, p.stun > 0 ? 1 : 0, p.score, flags(p)]),
+  const out = { tm: Math.round(performance.now()), mp: boardId, s: S_CODE[state] || 0, cd: Math.round((state === 'level' ? lvT : countT) * 10) / 10, lv: level, win: WIN, day: dayIx,
+    p: ships.map(p => [p.i, r1(p.x), r1(p.y), Math.round(p.a * 100) / 100, p.stun > 0 ? 1 : 0, p.score, flags(p), r1(p.vx), r1(p.vy)]),
     m: mons.map(m => [r1(m.x), r1(m.y)]), b: balls.slice(0, 30).map(b => [r1(b.x), r1(b.y), b.o === 'fort' ? 1 : 0]),
     u: pups.map(u => [r1(u.x), r1(u.y), u.k]), sr: series,
     t: target ? (target.chest ? -2 : PLACES.indexOf(target)) : -1, c: chest ? [r1(chest.x), r1(chest.y)] : null,
     w: winner ? winner.i : -1, e: ev ? [ev.k, Math.round(ev.t * 10) / 10, r1(ev.wx || 0), r1(ev.wy || 0)] : null,
     r: roster.map(r => r ? [r.kind, r.sail, r.rank] : null) };
-  if (fxq.length) { out.fx = fxq.slice(-40); fxq = []; }
   return out;
 }
+// smooth play on the joining devices: other ships are shown 100 ms in the past, moving between
+// two received positions; your own ship moves at once from your controls and is gently corrected
+let lastTm = 0, clockOff = null, snapBuf = [], rtt = 120;
+const INTERP = 100;
 function applySnapshot(g) {
+  if (g.tm) { if (g.tm <= lastTm) return; lastTm = g.tm;
+    const off = performance.now() - g.tm; clockOff = clockOff === null || off < clockOff ? off : clockOff + (off - clockOff) * .02; }
   if (g.mp && g.mp !== boardId) { if (g.mp === 'original') loadBoard(ORIGINAL); else if (recvMap && recvMap.id === g.mp) loadBoard(recvMap); else { flash('Loading the map...', '#ffd36b'); return; } }
   const ns = S_NAME[g.s] || 'menu';
   level = g.lv || 1; WIN = g.win || WIN; dayIx = g.day ?? dayIx; series = g.sr || series;
@@ -661,11 +668,16 @@ function applySnapshot(g) {
   if (ns === 'count' && (state === 'menu' || state === 'over')) { ships = []; earned = null; }
   const byI = {}; for (const p of ships) byI[p.i] = p;
   ships = g.p.map(q => { let p = byI[q[0]]; if (!p) { p = mkShip(q[0]); p.x = q[1]; p.y = q[2]; }
-    if (ns !== state) { p.x = q[1]; p.y = q[2]; }
-    p.tx = q[1]; p.ty = q[2]; p.a = q[3]; p.stun = q[4] ? 1 : 0; p.score = q[5];
+    const wasStun = p.stun > 0, mine = p.i === myIdx;
+    if (ns !== state) { p.x = q[1]; p.y = q[2]; p.vx = q[7] || 0; p.vy = q[8] || 0; }
+    p.tx = q[1]; p.ty = q[2]; p.hvx = q[7] || 0; p.hvy = q[8] || 0; if (!mine) p.a = q[3]; p.stun = q[4] ? 1 : 0; p.score = q[5];
+    if (mine && p.stun && !wasStun) { p.x = q[1]; p.y = q[2]; p.vx = p.hvx; p.vy = p.hvy; }
     const f = q[6] || 0; p.shield = !!(f & 1); p.boostT = f & 2 ? 1 : 0; p.tripleT = f & 4 ? 1 : 0; p.spinT = f & 8 ? 1 : 0; p.webbed = !!(f & 16); p.krakT = f & 32 ? 1 : 0;
     const r = roster[p.i]; if (r) { p.sail = r.sail; p.rank = r.rank; p.ai = r.kind === 'ai'; } return p; });
   mons = g.m.map((q, i) => { const o = mons[i] || { x: q[0], y: q[1] }; o.tx = q[0]; o.ty = q[1]; return o; });
+  if (g.tm) { if (ns !== state) snapBuf = [];
+    snapBuf.push({ t: g.tm, p: Object.fromEntries(g.p.map(q => [q[0], [q[1], q[2], q[3], q[7] || 0, q[8] || 0]])), m: g.m });
+    if (snapBuf.length > 40) snapBuf.shift(); }
   balls = g.b.map(q => ({ x: q[0], y: q[1], o: q[2] ? 'fort' : null }));
   pups = (g.u || []).map(q => ({ x: q[0], y: q[1], k: q[2] }));
   if (ns === 'level') lvT = g.cd || 0; else countT = g.cd || 0;
@@ -681,8 +693,43 @@ function applySnapshot(g) {
   else renderLobby();
   if (g.fx) for (const f of g.fx) playFx(...f);
 }
-function smooth(dt) { const k = Math.min(1, dt * 18);
-  for (const o of [...ships, ...mons]) if (o.tx !== undefined) { o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k; } }
+const lerpA = (a, b, k) => { let d = b - a; while (d > Math.PI) d -= 6.283; while (d < -Math.PI) d += 6.283; return a + d * k; };
+function smooth(dt) {
+  const rt = performance.now() - (clockOff || 0) - INTERP;
+  let a = null, b = null;
+  for (let i = snapBuf.length - 1; i >= 0; i--) if (snapBuf[i].t <= rt) { a = snapBuf[i]; b = snapBuf[i + 1] || null; break; }
+  if (!a && snapBuf.length) a = snapBuf[0];
+  const k = a && b ? Math.min(1, (rt - a.t) / Math.max(1, b.t - a.t)) : 0;
+  for (const p of ships) {
+    if (p.i === myIdx && state === 'play') { predict(p, dt); continue; }
+    const qa = a && a.p[p.i], qb = b && b.p[p.i];
+    if (qa && qb) { p.x = qa[0] + (qb[0] - qa[0]) * k; p.y = qa[1] + (qb[1] - qa[1]) * k; p.a = lerpA(qa[2], qb[2], k); }
+    else if (qa) { const e = Math.max(0, Math.min(250, rt - a.t)) / 1000; p.x = qa[0] + qa[3] * e; p.y = qa[1] + qa[4] * e; p.a = qa[2]; }   // late picture: keep sailing a moment
+    else if (p.tx !== undefined) { const s = Math.min(1, dt * 18); p.x += (p.tx - p.x) * s; p.y += (p.ty - p.y) * s; }
+  }
+  mons.forEach((o, i) => { const qa = a && a.m[i], qb = b && b.m[i];
+    if (qa && qb) { o.x = qa[0] + (qb[0] - qa[0]) * k; o.y = qa[1] + (qb[1] - qa[1]) * k; }
+    else if (o.tx !== undefined) { const s = Math.min(1, dt * 18); o.x += (o.tx - o.x) * s; o.y += (o.ty - o.y) * s; } });
+}
+// your own ship on a joining device: same steering as the host, then pulled towards where the host
+// says it is (projected forward by the link delay); a big difference (a hit, a whirlpool) snaps it
+function predict(p, dt) {
+  if (p.vx === undefined || isNaN(p.vx)) { p.vx = p.hvx || 0; p.vy = p.hvy || 0; }
+  const ahead = Math.min(.4, rtt / 2000 + (performance.now() - (clockOff || 0) - lastTm) / 1000);
+  const hx = p.tx + (p.hvx || 0) * ahead, hy = p.ty + (p.hvy || 0) * ahead;
+  if (p.stun > 0 || p.spinT > 0) { const s = Math.min(1, dt * 18); p.x += (p.tx - p.x) * s; p.y += (p.ty - p.y) * s; p.vx = p.hvx || 0; p.vy = p.hvy || 0; return; }
+  const ex = hx - p.x, ey = hy - p.y;
+  if (Math.hypot(ex, ey) > 140) { p.x = p.tx; p.y = p.ty; p.vx = p.hvx || 0; p.vy = p.hvy || 0; return; }
+  const k = localInput(), A = 650 * (p.boostT > 0 ? 1.75 : 1) * (DAY().speed || 1);
+  p.vx += k.x * A * dt; p.vy += k.y * A * dt;
+  if (ev && ev.k === 'storm') { p.vx += (ev.wx || 0) * dt; p.vy += (ev.wy || 0) * dt; }
+  const drag = p.webbed || p.krakT > 0 ? .012 : .15;
+  p.vx *= Math.pow(drag, dt); p.vy *= Math.pow(drag, dt);
+  slide(p, dt, 10);
+  const c = Math.min(1, dt * 4); p.x += ex * c; p.y += ey * c;
+  p.vx += ((p.hvx || 0) - p.vx) * Math.min(1, dt * 2); p.vy += ((p.hvy || 0) - p.vy) * Math.min(1, dt * 2);
+  if (Math.hypot(p.vx, p.vy) > 20) p.a = Math.atan2(p.vy, p.vx);
+}
 
 // ---------------- effects ----------------
 let parts = [], wakes = [], rings = [];
@@ -716,15 +763,20 @@ function stepFx(dt) {
 }
 
 // ---------------- network (WebRTC via the free PeerJS service) ----------------
-let peer = null, conns = [], hostConn = null, myCode = '', lastSent = '', sendT = 0, goCount = 0, remote = {};
+let peer = null, conns = [], fast = [], hostFast = null, pingT = 0, hostConn = null, myCode = '', lastSent = '', sendT = 0, goCount = 0, remote = {};
 const ID = c => 'treasure-race-tr7-' + c;
 const PO = () => Object.assign({ debug: 0 }, window.PEER_TEST || {});
 function broadcast(obj) { for (const c of conns) if (c && c.open) try { c.send(obj); } catch (e) {} }
 function sendNet(force) {
   if (isHost) { if (!conns.some(c => c && c.open)) { fxq = []; return; }
-    const now = performance.now(); if (!force && now - sendT < 33) return; sendT = now; broadcast({ g: snapshot(), v: VERSION }); return; }
+    const now = performance.now(); if (!force && now - sendT < 31) return; sendT = Math.max(sendT + 33, now - 33);
+    const g = snapshot();
+    conns.forEach((c, i) => { if (!c || !c.open) return; const f = fast[i] && fast[i].open ? fast[i] : c;
+      try { f.send({ g, v: VERSION }); if (fxq.length) c.send({ fx: fxq.slice(-40) }); } catch (e) {} });
+    fxq = []; return; }
   if (!hostConn || !hostConn.open) return;
   const i = localInput(), out = { in: [Math.round(i.x * 100) / 100, Math.round(i.y * 100) / 100, i.f ? 1 : 0], go: goCount };
+  const now = performance.now(); if (now - pingT > 2000) { pingT = now; try { hostConn.send({ pg: now }); } catch (e) {} }
   const js = JSON.stringify(out); if (!force && js === lastSent) return; lastSent = js;
   try { hostConn.send(out); } catch (e) {}
 }
@@ -732,6 +784,9 @@ function sendGo() { goCount++; if (myPerk && hostConn && hostConn.open) { try { 
 let warnedVersion = false;
 function versionCheck(d) { if (d.v && d.v !== VERSION && !warnedVersion) { warnedVersion = true; flash('One device has an older version - reload it', '#ffd36b'); msgT = 6; } }
 function hostConnection(c) {
+  if (c.metadata && c.metadata.fast !== undefined) {   // second, unordered link of a friend: game pictures only
+    c.on('open', () => { const s = +c.metadata.fast; if (conns[s]) fast[s] = c; else c.close(); });
+    const off = () => { const s = fast.indexOf(c); if (s >= 0) fast[s] = null; }; c.on('close', off); c.on('error', off); return; }
   c.on('open', () => {
     const slot = [1, 2, 3].find(i => !roster[i]);
     if (slot === undefined || state !== 'menu' && state !== 'over') { try { c.send({ full: 1 }); } catch (e) {} setTimeout(() => c.close(), 300); return; }
@@ -743,9 +798,10 @@ function hostConnection(c) {
     if (d.hello) { roster[slot].sail = SAILS.includes(d.hello.sail) ? d.hello.sail : 'plain'; roster[slot].rank = +d.hello.rank || 0; renderLobby(); }
     if (Array.isArray(d.in)) remote[slot].in = d.in;
     if (d.perk === 'shield') remote[slot].perk = true;
+    if (d.pg) try { c.send({ po: d.pg }); } catch (e) {}
     if (+d.go > remote[slot].go) { remote[slot].go = +d.go; if (state === 'over' && !adBusy) start(); }
   });
-  const down = () => { const slot = conns.indexOf(c); if (slot < 0) return; conns[slot] = null; delete remote[slot];
+  const down = () => { const slot = conns.indexOf(c); if (slot < 0) return; conns[slot] = null; delete remote[slot]; if (fast[slot]) { try { fast[slot].close(); } catch (e) {} fast[slot] = null; }
     const s = ships.find(p => p.i === slot); if (s) flash(s.name + ' left the game', s.l);
     roster[slot] = null; if (state !== 'menu' && state !== 'over') { ships = ships.filter(p => p.i !== slot); updHud(); }
     renderLobby(); };
@@ -768,6 +824,7 @@ function joinGame() {
   if (code.length !== 4) { $('homeSt').textContent = 'Type the 4-digit code shown on the host\'s screen.'; $('code').focus(); return; }
   if (typeof Peer === 'undefined') { $('homeSt').textContent = 'Could not load the link code. Check the internet and reload.'; return; }
   $('homeSt').textContent = 'Joining game ' + code + '...'; isHost = false; solo = false;
+  lastTm = 0; clockOff = null; snapBuf = []; hostFast = null;
   if (peer) try { peer.destroy(); } catch (e) {}
   const p = new Peer(PO()); peer = p;
   const giveUp = setTimeout(() => { if (!hostConn) $('homeSt').textContent = 'No answer from game ' + code + '. Check the code, and that the host\'s screen is open.'; }, 12000);
@@ -775,8 +832,12 @@ function joinGame() {
     c.on('data', d => { if (!d || typeof d !== 'object') return; versionCheck(d);
       if (d.full) { $('homeSt').textContent = 'That game is full or already sailing. Try again when it ends.'; return; }
       if (d.welcome !== undefined) { clearTimeout(giveUp); hostConn = c; myIdx = d.welcome; c.send({ hello: { sail: mySail, rank: rankIx(coins) }, v: VERSION });
+        try { const f = p.connect(ID(code), { reliable: false, serialization: 'json', metadata: { fast: d.welcome } }); hostFast = f;
+          f.on('data', x => { if (x && x.g && hostConn === c) applySnapshot(x.g); }); } catch (e) {}
         setTheme(); showLobby(); SFX.pick(); return; }
       if (d.mc || d.mapOrig) { onMapChunk(d); return; }
+      if (d.po) { rtt = rtt * .7 + (performance.now() - d.po) * .3; return; }
+      if (d.fx) { for (const f of d.fx) playFx(...f); return; }
       if (d.g) applySnapshot(d.g); });
     c.on('close', () => { if (hostConn !== c) return; hostConn = null; flash('The host left the game', '#ffd36b'); state = 'menu'; ships = []; showHome(); });
   });
@@ -1243,7 +1304,11 @@ function award() {
 }
 
 function loop(now) {
-  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  const dt = Math.min(.05, (now - last) / 1000);
+  if (!document.hidden && now - last < 250) { ftAvg = ftAvg * .95 + (now - last) * .05;
+    if (ftAvg > 24 && dprCap > 1 && (state === 'play' || state === 'count')) { if ((ftSlow += dt) > 1.5) { dprCap = Math.max(1, dprCap - .25); ftSlow = 0; ftAvg = 16; fit(); } }
+    else ftSlow = 0; }
+  last = now;
   if (msgT > 0) msgT -= dt; if (goT > 0) goT -= dt;
   if ((prevState === 'count' || prevState === 'level') && state === 'play') goT = .9;
   if (prevState !== 'over' && state === 'over') award();
